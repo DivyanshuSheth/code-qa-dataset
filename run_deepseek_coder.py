@@ -112,6 +112,13 @@ question_prompts = [
     'In one sentence, generate an answerable question about functionality based on this code. Only output the question.',
     'In one sentence, generate an extractive question that can be answered with a one-line span extracted directly from this code. Only output the question.'
 ]
+next_prompts = [
+    'In one sentence, generate another answerable question based on the code. Only output the question.',
+    'In one sentence, generate another answerable "why" question based on the code. Only output the question.',
+    'In one sentence, generate another answerable question about edge cases based on the code. Only output the question.',
+    'In one sentence, generate another answerable question about functionality based on the code. Only output the question.',
+    'In one sentence, generate another extractive question that can be answered with a one-line span extracted directly from the code. Only output the question.'
+]
 extractive_prompt = 'What is extractive question answering?'
 answer_prompt = 'In one sentence, generate the correct answer to this question based on the code. Only output the answer.'
 span_prompt = 'Provide a one-line span extracted directly from the code which contains the correct answer to this question. Only output the answer span.'
@@ -124,35 +131,31 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained("deepseek-ai/deepseek-coder-33b-instruct", torch_dtype=torch.bfloat16).cuda()
     results = []
     for datapoint in datapoints:
-        for category, prompt in zip(categories, question_prompts):
+        for category, prompt, nxt in zip(categories, question_prompts, next_prompts):
+            message = []
+            if category == 'extractive':
+                message.append({'role': 'user', 'content': extractive_prompt})
+                inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
+                outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
+                context = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
+                message.append({'role': 'assistant', 'content': context})
             for i in range(n):
-                if category == 'extractive':
-                    message = [{'role': 'user', 'content': extractive_prompt}]
-                    inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
-                    context = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
-                    message.append({'role': 'assistant', 'content': context})
+                if i == 0:
                     message.append({'role': 'user', 'content': '\n\n'.join([datapoint, prompt])})
-                    inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
-                    question = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
-                    message.append({'role': 'assistant', 'content': question})
-                    message.append({'role': 'user', 'content': span_prompt})
-                    inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
-                    answer = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
-                    message.append({'role': 'assistant', 'content': answer})
                 else:
-                    message = [{'role': 'user', 'content': '\n\n'.join([datapoint, prompt])}]
-                    inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
-                    question = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
-                    message.append({'role': 'assistant', 'content': question})
+                    message.append({'role': 'user', 'content': nxt})
+                inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
+                outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
+                question = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
+                message.append({'role': 'assistant', 'content': question})
+                if category == 'extractive':
+                    message.append({'role': 'user', 'content': span_prompt})
+                else:
                     message.append({'role': 'user', 'content': answer_prompt})
-                    inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
-                    answer = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
-                    message.append({'role': 'assistant', 'content': answer})
+                inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
+                outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
+                answer = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
+                message.append({'role': 'assistant', 'content': answer})
                 result = {
                     'code': datapoint,
                     'category': category,
