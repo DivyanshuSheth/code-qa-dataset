@@ -32,26 +32,31 @@ class Transform(ast.NodeTransformer):
     def visit_arg(self, node):
         name = node.arg
         eman = self.sub(name)
+        self.generic_visit(node)
         return ast.arg(**{**node.__dict__, 'arg': eman})
 
     def visit_Name(self, node):
         name = node.id
         eman = self.sub(name)
+        self.generic_visit(node)
         return ast.Name(**{**node.__dict__, 'id': eman})
 
     def visit_ClassDef(self, node):
         name = node.name
         eman = self.sub(name)
+        self.generic_visit(node)
         return ast.ClassDef(**{**node.__dict__, 'name': eman})
 
     def visit_FunctionDef(self, node):
         name = node.name
         eman = self.sub(name)
+        self.generic_visit(node)
         return ast.FunctionDef(**{**node.__dict__, 'name': eman})
 
     def visit_AsyncFunctionDef(self, node):
         name = node.name
         eman = self.sub(name)
+        self.generic_visit(node)
         return ast.AsyncFunctionDef(**{**node.__dict__, 'name': eman})
 
 
