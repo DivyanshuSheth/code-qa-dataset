@@ -83,8 +83,10 @@ if __name__ == '__main__':
             a = answer
             if obfuscation == 'Undocument':
                 obfuscated = ast.unparse(ast.parse(code))
+                obfuscated = re.sub(r'\"\"\".*\"\"\"', '\n', obfuscated)
+                obfuscated = re.sub(r'\'\'\'.*\'\'\'', '\n', obfuscated)
             if obfuscation == 'Rename':
-                # also undocuments
+                # also uncomments
                 transform = Transform()
                 obfuscated = ast.unparse(transform.visit(ast.parse(code)))
                 q = substitute(q, transform.map)
