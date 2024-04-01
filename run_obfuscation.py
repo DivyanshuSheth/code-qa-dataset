@@ -82,9 +82,22 @@ if __name__ == '__main__':
             q = question
             a = answer
             if obfuscation == 'Undocument':
-                obfuscated = ast.unparse(ast.parse(code))
-                obfuscated = re.sub(r'""".*"""', '\n', obfuscated)
-                obfuscated = re.sub(r'\'\'\'.*\'\'\'', '\n', obfuscated)
+                # obfuscated = ast.unparse(ast.parse(code))
+                # https://gist.github.com/phpdude/1ae6f19de213d66286c8183e9e3b9ec1
+                parsed = ast.parse(code)
+                for node in ast.walk(parsed):
+                    if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
+                        continue
+                    if not len(node.body):
+                        continue
+                    if not isinstance(node.body[0], ast.Expr):
+                        continue
+                    if not hasattr(node.body[0], 'value') or not isinstance(node.body[0].value, ast.Str):
+                        continue
+                    node.body = node.body[1:]
+                obfuscated = ast.unparse(parsed)
+                # obfuscated = re.sub(r'""".*"""', '\n', obfuscated)
+                # obfuscated = re.sub(r'\'\'\'.*\'\'\'', '\n', obfuscated)
             if obfuscation == 'Rename':
                 # also uncomments
                 transform = Transform()
