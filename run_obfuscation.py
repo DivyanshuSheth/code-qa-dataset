@@ -12,7 +12,7 @@ prompts = [
     None,
     None,
     'Without renaming any existing variables/functions/classes, alter and/or refactor this code without changing its overall behavior. For example, this can be done by reordering certain statements that do not depend on one another, or wrapping reused statements in functions, for example. Only output the full block of code above with your modifications, without any additional outputs.',
-    'Without modifying any existing lines of code, add blocks of code that are never executed or have no effect on this program\'s behavior. For example, this can include unused variables, functions, or control structures. Try to hide them by giving them names that make them seem like legitimate live code. Only output the full block of code above with your modifications, without any additional outputs.'
+    'Without modifying any existing lines of code, add blocks of dead code that are never executed or have no effect on this program\'s behavior. For example, this can include unused variables, functions, or control structures. Try to hide them by giving them names that make them seem like legitimate live code. Only output the full block of code above with your modifications, without any additional outputs.'
 ]
 
 

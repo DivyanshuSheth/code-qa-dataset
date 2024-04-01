@@ -39,7 +39,7 @@ n = 100
 
 
 if __name__ == '__main__':
-    assert len(categories) == len(question_prompts)
+    assert len(categories) == len(pre_prompts) == len(question_prompts)
     torch.manual_seed(seed)
     dataset = load_dataset('code_search_net', 'python')
     datapoints = dataset[split].shuffle(seed=seed)[:n]['whole_func_string']
