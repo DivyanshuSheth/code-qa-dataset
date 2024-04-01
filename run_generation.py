@@ -34,7 +34,7 @@ answer_prompt = 'In one sentence, provide the correct answer to this question ba
 split = 'train'
 # seed = 42
 seed = 11797
-n = 11
+n = 100
 
 
 if __name__ == '__main__':
