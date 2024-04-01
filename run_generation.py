@@ -14,9 +14,9 @@ pre_prompts = [
     None,
     None,
     None,
-    'Explain the concept of edge cases in programming.'
-    'Explain the concepts of performance and scalability in programming.'
-    'Explain the concept of control flow in programming.'
+    'Explain the concept of edge cases in programming.',
+    'Explain the concepts of performance and scalability in programming.',
+    'Explain the concept of control flow in programming.',
     'List and explain key concepts in object-oriented programming (OOP).'
 ]
 question_prompts = [
@@ -34,6 +34,7 @@ answer_prompt = 'In one sentence, provide the correct answer to this question ba
 split = 'train'
 # seed = 42
 seed = 11797
+# n = 11
 n = 100
 
 
