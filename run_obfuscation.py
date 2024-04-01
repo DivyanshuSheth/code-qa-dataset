@@ -2,15 +2,65 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import json
 from tqdm import tqdm
+import ast
+import re
 
 
-# obfuscations = ['None', 'Comments', 'Rename', 'Refactor', 'Dead Code']
-obfuscations = ['None', 'Refactor', 'Dead Code']
+obfuscations = ['None', 'Undocument', 'Rename', 'Refactor', 'Dead Code']
 prompts = [
     None,
-    'Without renaming any existing variables/functions/classes, alter and/or refactor this code without changing its overall behavior. This can be done by reordering certain statements that do not depend on one another, or wrapping reused statements in functions, for example. Output the full block of code above with your modifications, without any additional outputs.',
-    'Without modifying any existing lines of code, add blocks of code that are never executed or have no effect on this program\'s behavior. This can include unused variables, functions, or control structures. Output the full block of code above with your modifications, without any additional outputs.'
+    None,
+    None,
+    'Without renaming any existing variables/functions/classes, alter and/or refactor this code without changing its overall behavior. For example, this can be done by reordering certain statements that do not depend on one another, or wrapping reused statements in functions, for example. Only output the full block of code above with your modifications, without any additional outputs.',
+    'Without modifying any existing lines of code, add blocks of code that are never executed or have no effect on this program\'s behavior. For example, this can include unused variables, functions, or control structures. Try to hide them by giving them names that make them seem like legitimate live code. Only output the full block of code above with your modifications, without any additional outputs.'
 ]
+
+
+class Transform(ast.NodeTransformer):
+    def __init__(self):
+        super().__init__()
+        self.map = dict()
+
+    def sub(self, name):
+        if name in self.map.keys():
+            eman = self.map[name]
+        else:
+            eman = '_' + str(len(self.map))
+            self.map[name] = eman
+        return eman
+
+    def visit_arg(self, node):
+        name = node.arg
+        eman = self.sub(name)
+        return ast.arg(**{**node.__dict__, 'arg': eman})
+
+    def visit_Name(self, node):
+        name = node.id
+        eman = self.sub(name)
+        return ast.Name(**{**node.__dict__, 'id': eman})
+
+    def visit_ClassDef(self, node):
+        name = node.name
+        eman = self.sub(name)
+        return ast.ClassDef(**{**node.__dict__, 'name': eman})
+
+    def visit_FunctionDef(self, node):
+        name = node.name
+        eman = self.sub(name)
+        return ast.FunctionDef(**{**node.__dict__, 'name': eman})
+
+    def visit_AsyncFunctionDef(self, node):
+        name = node.name
+        eman = self.sub(name)
+        return ast.AsyncFunctionDef(**{**node.__dict__, 'name': eman})
+
+
+def substitute(s, d):
+    s_split = re.split(r'\W+', s)
+    for ss in s_split:
+        if ss in d.keys():
+            s = re.sub(rf'\b{ss}\b', d[ss], s)
+    return s
 
 
 if __name__ == '__main__':
@@ -28,7 +78,17 @@ if __name__ == '__main__':
         answer = datapoint['answer']
         for obfuscation, prompt in zip(obfuscations, prompts):
             obfuscated = code
-            if obfuscation != 'None':
+            q = question
+            a = answer
+            if obfuscation == 'Undocument':
+                obfuscated = ast.unparse(ast.parse(code))
+            if obfuscation == 'Rename':
+                # also undocuments
+                transform = Transform()
+                obfuscated = ast.unparse(transform.visit(ast.parse(code)))
+                q = substitute(q, transform.map)
+                a = substitute(a, transform.map)
+            if prompt is not None:
                 message = []
                 message.append({'role': 'user', 'content': '\n\n'.join([code, prompt])})
                 inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
@@ -40,8 +100,8 @@ if __name__ == '__main__':
                 'obfuscated_code': obfuscated,
                 'obfuscation': obfuscation,
                 'category': category,
-                'question': question,
-                'answer': answer
+                'question': q,
+                'answer': a
             }
             print(result, flush=True)
             results.append(result)
