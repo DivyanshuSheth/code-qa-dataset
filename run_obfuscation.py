@@ -71,6 +71,7 @@ if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained('deepseek-ai/deepseek-coder-33b-instruct')
     model = AutoModelForCausalLM.from_pretrained('deepseek-ai/deepseek-coder-33b-instruct', torch_dtype=torch.bfloat16).cuda()
     results = []
+    cache = dict()
     for datapoint in tqdm(data):
         code = datapoint['code']
         category = datapoint['category']
@@ -89,12 +90,16 @@ if __name__ == '__main__':
                 q = substitute(q, transform.map)
                 a = substitute(a, transform.map)
             if prompt is not None:
-                message = []
-                message.append({'role': 'user', 'content': '\n\n'.join([code, prompt])})
-                inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
-                obfuscated = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
-                message.append({'role': 'assistant', 'content': obfuscated})
+                if (code, obfuscation) in cache.keys():
+                    obfuscated = cache[(code, obfuscation)]
+                else:
+                    message = []
+                    message.append({'role': 'user', 'content': '\n\n'.join([code, prompt])})
+                    inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
+                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
+                    obfuscated = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
+                    message.append({'role': 'assistant', 'content': obfuscated})
+                    cache[(code, obfuscation)] = obfuscated
             result = {
                 'original_code': code,
                 'obfuscated_code': obfuscated,
