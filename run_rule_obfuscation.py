@@ -69,6 +69,12 @@ def substitute(s, d):
     return s
 
 
+# def trim(s):
+#     lines = s.split('\n')
+#     lines = list(filter(lambda l: l.startswith('\t') or l.startswith(' ') or l.startswith('def ') or l.startswith('class '), lines))
+#     return '\n'.join(lines)
+
+
 if __name__ == '__main__':
     # assert len(obfuscations) == len(prompts)
     with open('./generation_results.json', 'r') as f:
@@ -137,6 +143,7 @@ if __name__ == '__main__':
             #         outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
             #         obfuscated = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
             #         message.append({'role': 'assistant', 'content': obfuscated})
+            #         obfuscated = trim(obfuscated)
             #         cache[(code, obfuscation)] = obfuscated
             result = {
                 'original_code': code,
