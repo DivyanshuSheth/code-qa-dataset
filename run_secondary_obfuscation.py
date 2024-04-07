@@ -3,7 +3,10 @@
 import json
 from tqdm import tqdm
 import ast
+import ast_scope
 import re
+import random
+import string
 
 
 # obfuscations = ['None', 'Undocument', 'Rename', 'Refactor', 'Dead Code']
@@ -18,17 +21,22 @@ obfuscations = ['None', 'Undocument', 'Rename', 'Undocument and Rename']
 
 
 class Transform(ast.NodeTransformer):
-    def __init__(self):
+    def __init__(self, globalz):
         super().__init__()
+        self.globalz = globalz
         self.map = dict()
 
     def sub(self, name):
-        if name in self.map.keys():
-            eman = self.map[name]
+        if name in self.globalz:
+            return name
         else:
-            eman = '_' + str(len(self.map))
-            self.map[name] = eman
-        return eman
+            if name in self.map.keys():
+                eman = self.map[name]
+            else:
+                # eman = '_' + str(len(self.map))
+                eman = '_' + ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+                self.map[name] = eman
+            return eman
 
     def visit_arg(self, node):
         name = node.arg
@@ -75,17 +83,25 @@ def substitute(s, d):
 #     return '\n'.join(lines)
 
 
+seed = 11797
+
+
 if __name__ == '__main__':
     # assert len(obfuscations) == len(prompts)
-    with open('./generation_results.json', 'r') as f:
+    random.seed(seed)
+    torch.manual_seed(seed)
+    with open('./primary_obfuscation_results.json', 'r') as f:
         data = json.load(f)
     print(data, end='\n\n', flush=True)
+    random.seed(seed)
     # tokenizer = AutoTokenizer.from_pretrained('deepseek-ai/deepseek-coder-33b-instruct')
     # model = AutoModelForCausalLM.from_pretrained('deepseek-ai/deepseek-coder-33b-instruct', torch_dtype=torch.bfloat16).cuda()
     results = []
     # cache = dict()
     for datapoint in tqdm(data):
-        code = datapoint['code']
+        original = datapoint['original_code']
+        code = datapoint['obfuscated_code']
+        obf = datapoint['obfuscation']
         category = datapoint['category']
         question = datapoint['question']
         answer = datapoint['answer']
@@ -110,13 +126,16 @@ if __name__ == '__main__':
                 obfuscated = ast.unparse(parsed)
                 # obfuscated = re.sub(r'""".*"""', '\n', obfuscated)
                 # obfuscated = re.sub(r'\'\'\'.*\'\'\'', '\n', obfuscated)
-            if obfuscation == 'Rename':
+            elif obfuscation == 'Rename':
                 # also uncomments
-                transform = Transform()
-                obfuscated = ast.unparse(transform.visit(ast.parse(code)))
+                parsed = ast.parse(code)
+                scope = ast_scope.annotate(parsed)
+                globalz = list(sorted(scope.global_scope.symbols_in_frame))
+                transform = Transform(globalz)
+                obfuscated = ast.unparse(transform.visit(parsed))
                 q = substitute(q, transform.map)
                 a = substitute(a, transform.map)
-            if obfuscation == 'Undocument and Rename':
+            elif obfuscation == 'Undocument and Rename':
                 parsed = ast.parse(code)
                 for node in ast.walk(parsed):
                     if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
@@ -129,8 +148,11 @@ if __name__ == '__main__':
                         continue
                     node.body = node.body[1:]
                 obfuscated = ast.unparse(parsed)
-                transform = Transform()
-                obfuscated = ast.unparse(transform.visit(ast.parse(obfuscated)))
+                parsed = ast.parse(obfuscated)
+                scope = ast_scope.annotate(parsed)
+                globalz = list(sorted(scope.global_scope.symbols_in_frame))
+                transform = Transform(globalz)
+                obfuscated = ast.unparse(transform.visit(parsed))
                 q = substitute(q, transform.map)
                 a = substitute(a, transform.map)
             # if prompt is not None:
@@ -146,15 +168,17 @@ if __name__ == '__main__':
             #         obfuscated = trim(obfuscated)
             #         cache[(code, obfuscation)] = obfuscated
             result = {
-                'original_code': code,
-                'obfuscated_code': obfuscated,
-                'obfuscation': obfuscation,
+                'original_code': original,
+                'primary_obfuscated_code': code,
+                'secondary_obfuscated_code': obfuscated,
+                'primary_obfuscation': obf,
+                'secondary_obfuscation': obfuscation,
                 'category': category,
                 'question': q,
                 'answer': a
             }
             print(result, flush=True)
             results.append(result)
-    with open('./rule_obfuscation_results.json', 'w') as f:
+    with open('./secondary_obfuscation_results.json', 'w') as f:
         json.dump(results, f)
     print('Done!', flush=True)
