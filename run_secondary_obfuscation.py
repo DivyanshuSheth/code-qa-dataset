@@ -26,8 +26,8 @@ class Transform(ast.NodeTransformer):
         self.globalz = globalz
         self.map = dict()
 
-    def sub(self, name):
-        if name in self.globalz:
+    def sub(self, name, defn=False):
+        if not defn and name in self.globalz:
             return name
         else:
             if name in self.map.keys():
@@ -52,19 +52,19 @@ class Transform(ast.NodeTransformer):
 
     def visit_ClassDef(self, node):
         name = node.name
-        eman = self.sub(name)
+        eman = self.sub(name, defn=True)
         self.generic_visit(node)
         return ast.ClassDef(**{**node.__dict__, 'name': eman})
 
     def visit_FunctionDef(self, node):
         name = node.name
-        eman = self.sub(name)
+        eman = self.sub(name, defn=True)
         self.generic_visit(node)
         return ast.FunctionDef(**{**node.__dict__, 'name': eman})
 
     def visit_AsyncFunctionDef(self, node):
         name = node.name
-        eman = self.sub(name)
+        eman = self.sub(name, defn=True)
         self.generic_visit(node)
         return ast.AsyncFunctionDef(**{**node.__dict__, 'name': eman})
 
@@ -89,7 +89,7 @@ seed = 11797
 if __name__ == '__main__':
     # assert len(obfuscations) == len(prompts)
     random.seed(seed)
-    torch.manual_seed(seed)
+    # torch.manual_seed(seed)
     with open('./primary_obfuscation_results.json', 'r') as f:
         data = json.load(f)
     print(data, end='\n\n', flush=True)
@@ -109,10 +109,16 @@ if __name__ == '__main__':
             obfuscated = code
             q = question
             a = answer
+            error = False
             if obfuscation == 'Undocument':
                 # obfuscated = ast.unparse(ast.parse(code))
                 # https://gist.github.com/phpdude/1ae6f19de213d66286c8183e9e3b9ec1
-                parsed = ast.parse(code)
+                try:
+                    parsed = ast.parse(code)
+                except:
+                    print("Syntax error in primary obfuscated code!", flush=True)
+                    error = True
+                    parsed = ast.parse(original)
                 for node in ast.walk(parsed):
                     if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
                         continue
@@ -128,7 +134,12 @@ if __name__ == '__main__':
                 # obfuscated = re.sub(r'\'\'\'.*\'\'\'', '\n', obfuscated)
             elif obfuscation == 'Rename':
                 # also uncomments
-                parsed = ast.parse(code)
+                try:
+                    parsed = ast.parse(code)
+                except:
+                    print("Syntax error in obfuscated code!", flush=True)
+                    error = True
+                    parsed = ast.parse(original)
                 scope = ast_scope.annotate(parsed)
                 globalz = list(sorted(scope.global_scope.symbols_in_frame))
                 transform = Transform(globalz)
@@ -136,7 +147,12 @@ if __name__ == '__main__':
                 q = substitute(q, transform.map)
                 a = substitute(a, transform.map)
             elif obfuscation == 'Undocument and Rename':
-                parsed = ast.parse(code)
+                try:
+                    parsed = ast.parse(code)
+                except:
+                    print("Syntax error in obfuscated code!", flush=True)
+                    error = True
+                    parsed = ast.parse(original)
                 for node in ast.walk(parsed):
                     if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
                         continue
@@ -148,7 +164,17 @@ if __name__ == '__main__':
                         continue
                     node.body = node.body[1:]
                 obfuscated = ast.unparse(parsed)
-                parsed = ast.parse(obfuscated)
+                try:
+                    parsed = ast.parse(obfuscated)
+                except:
+                    print("Syntax error in obfuscated code!", flush=True)
+                    error = True
+                    try:
+                        parsed = ast.parse(code)
+                    except:
+                        print("Syntax error in obfuscated code!", flush=True)
+                        error = True
+                        parsed = ast.parse(original)
                 scope = ast_scope.annotate(parsed)
                 globalz = list(sorted(scope.global_scope.symbols_in_frame))
                 transform = Transform(globalz)
@@ -175,7 +201,8 @@ if __name__ == '__main__':
                 'secondary_obfuscation': obfuscation,
                 'category': category,
                 'question': q,
-                'answer': a
+                'answer': a,
+                'error': error
             }
             print(result, flush=True)
             results.append(result)

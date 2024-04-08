@@ -83,8 +83,12 @@ def trim(s):
     return '\n'.join(lines)
 
 
+seed = 11797
+
+
 if __name__ == '__main__':
     assert len(obfuscations) == len(prompts)
+    torch.manual_seed(seed)
     with open('./generation_results.json', 'r') as f:
         data = json.load(f)
     print(data, end='\n\n', flush=True)
