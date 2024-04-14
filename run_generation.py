@@ -36,7 +36,8 @@ split = 'train'
 seed = 11797
 # n = 11
 # n = 100
-n = None
+n = 1000
+# n = None
 model_name = 'deepseek-ai/deepseek-coder-33b-instruct'
 
 
@@ -52,7 +53,7 @@ if __name__ == '__main__':
     else:
         datapoints = dataset[split]['whole_func_string']
         n = len(datapoints)
-        print(n, 'datapoints', end='\n\n', flush=True)
+        print(n, 'datapoints', flush=True)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16).cuda()
     results = []
