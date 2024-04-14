@@ -35,7 +35,8 @@ split = 'train'
 # seed = 42
 seed = 11797
 # n = 11
-n = 100
+# n = 100
+n = None
 model_name = 'deepseek-ai/deepseek-coder-33b-instruct'
 
 
@@ -43,9 +44,15 @@ if __name__ == '__main__':
     assert len(categories) == len(pre_prompts) == len(question_prompts)
     torch.manual_seed(seed)
     dataset = load_dataset('code_search_net', 'python')
-    datapoints = dataset[split].shuffle(seed=seed)[:n]['whole_func_string']
-    for datapoint in datapoints:
-        print(datapoint, end='\n\n', flush=True)
+    if n is not None:
+        datapoints = dataset[split].shuffle(seed=seed)[:n]['whole_func_string']
+        assert len(datapoints) == n
+        # for datapoint in datapoints:
+        #     print(datapoint, end='\n\n', flush=True)
+    else:
+        datapoints = dataset[split]['whole_func_string']
+        n = len(datapoints)
+        print(n, 'datapoints', end='\n\n', flush=True)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16).cuda()
     results = []
