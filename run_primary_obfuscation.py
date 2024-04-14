@@ -84,6 +84,7 @@ def trim(s):
 
 
 seed = 11797
+model_name = 'deepseek-ai/deepseek-coder-33b-instruct'
 
 
 if __name__ == '__main__':
@@ -92,8 +93,8 @@ if __name__ == '__main__':
     with open('./generation_results.json', 'r') as f:
         data = json.load(f)
     print(data, end='\n\n', flush=True)
-    tokenizer = AutoTokenizer.from_pretrained('deepseek-ai/deepseek-coder-33b-instruct')
-    model = AutoModelForCausalLM.from_pretrained('deepseek-ai/deepseek-coder-33b-instruct', torch_dtype=torch.bfloat16).cuda()
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16).cuda()
     results = []
     cache = dict()
     for datapoint in tqdm(data):
@@ -141,7 +142,7 @@ if __name__ == '__main__':
                     message = []
                     message.append({'role': 'user', 'content': '\n\n'.join([obfuscated, prompt])})
                     inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
+                    outputs = model.generate(inputs, max_new_tokens=1024, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
                     obfuscated = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
                     message.append({'role': 'assistant', 'content': obfuscated})
                     obfuscated = trim(obfuscated)
@@ -151,7 +152,7 @@ if __name__ == '__main__':
                     message = []
                     message.append({'role': 'user', 'content': '\n\n'.join([code, prompt])})
                     inputs = tokenizer.apply_chat_template(message, add_generation_prompt=True, return_tensors="pt").cuda()
-                    outputs = model.generate(inputs, max_new_tokens=512, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
+                    outputs = model.generate(inputs, max_new_tokens=1024, do_sample=True, top_k=50, top_p=0.95, eos_token_id=tokenizer.eos_token_id)
                     obfuscated = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
                     message.append({'role': 'assistant', 'content': obfuscated})
                     obfuscated = trim(obfuscated)
