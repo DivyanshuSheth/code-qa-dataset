@@ -116,22 +116,27 @@ if __name__ == '__main__':
                 try:
                     parsed = ast.parse(code)
                 except:
-                    print("Syntax error in primary obfuscated code!", flush=True)
+                    print("Syntax error in obfuscated code!", flush=True)
                     error = True
-                    parsed = ast.parse(original)
-                for node in ast.walk(parsed):
-                    if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
-                        continue
-                    if not len(node.body):
-                        continue
-                    if not isinstance(node.body[0], ast.Expr):
-                        continue
-                    if not hasattr(node.body[0], 'value') or not isinstance(node.body[0].value, ast.Str):
-                        continue
-                    node.body = node.body[1:]
-                obfuscated = ast.unparse(parsed)
-                # obfuscated = re.sub(r'""".*"""', '\n', obfuscated)
-                # obfuscated = re.sub(r'\'\'\'.*\'\'\'', '\n', obfuscated)
+                    try:
+                        parsed = ast.parse(original)
+                    except:
+                        print("Syntax error in original code!", flush=True)
+                        parsed = None
+                if parsed is not None:
+                    for node in ast.walk(parsed):
+                        if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
+                            continue
+                        if not len(node.body):
+                            continue
+                        if not isinstance(node.body[0], ast.Expr):
+                            continue
+                        if not hasattr(node.body[0], 'value') or not isinstance(node.body[0].value, ast.Str):
+                            continue
+                        node.body = node.body[1:]
+                    obfuscated = ast.unparse(parsed)
+                    # obfuscated = re.sub(r'""".*"""', '\n', obfuscated)
+                    # obfuscated = re.sub(r'\'\'\'.*\'\'\'', '\n', obfuscated)
             elif obfuscation == 'Rename':
                 # also uncomments
                 try:
@@ -139,48 +144,58 @@ if __name__ == '__main__':
                 except:
                     print("Syntax error in obfuscated code!", flush=True)
                     error = True
-                    parsed = ast.parse(original)
-                scope = ast_scope.annotate(parsed)
-                globalz = list(sorted(scope.global_scope.symbols_in_frame))
-                transform = Transform(globalz)
-                obfuscated = ast.unparse(transform.visit(parsed))
-                q = substitute(q, transform.map)
-                a = substitute(a, transform.map)
+                    try:
+                        parsed = ast.parse(original)
+                    except:
+                        print("Syntax error in original code!", flush=True)
+                        parsed = None
+                if parsed is not None:
+                    scope = ast_scope.annotate(parsed)
+                    globalz = list(sorted(scope.global_scope.symbols_in_frame))
+                    transform = Transform(globalz)
+                    obfuscated = ast.unparse(transform.visit(parsed))
+                    q = substitute(q, transform.map)
+                    a = substitute(a, transform.map)
             elif obfuscation == 'Undocument and Rename':
                 try:
                     parsed = ast.parse(code)
                 except:
                     print("Syntax error in obfuscated code!", flush=True)
                     error = True
-                    parsed = ast.parse(original)
-                for node in ast.walk(parsed):
-                    if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
-                        continue
-                    if not len(node.body):
-                        continue
-                    if not isinstance(node.body[0], ast.Expr):
-                        continue
-                    if not hasattr(node.body[0], 'value') or not isinstance(node.body[0].value, ast.Str):
-                        continue
-                    node.body = node.body[1:]
-                obfuscated = ast.unparse(parsed)
-                try:
-                    parsed = ast.parse(obfuscated)
-                except:
-                    print("Syntax error in obfuscated code!", flush=True)
-                    error = True
                     try:
-                        parsed = ast.parse(code)
-                    except:
-                        print("Syntax error in obfuscated code!", flush=True)
-                        error = True
                         parsed = ast.parse(original)
-                scope = ast_scope.annotate(parsed)
-                globalz = list(sorted(scope.global_scope.symbols_in_frame))
-                transform = Transform(globalz)
-                obfuscated = ast.unparse(transform.visit(parsed))
-                q = substitute(q, transform.map)
-                a = substitute(a, transform.map)
+                    except:
+                        print("Syntax error in original code!", flush=True)
+                        parsed = None
+                if parsed is not None:
+                    for node in ast.walk(parsed):
+                        if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
+                            continue
+                        if not len(node.body):
+                            continue
+                        if not isinstance(node.body[0], ast.Expr):
+                            continue
+                        if not hasattr(node.body[0], 'value') or not isinstance(node.body[0].value, ast.Str):
+                            continue
+                        node.body = node.body[1:]
+                    # obfuscated = ast.unparse(parsed)
+                    # try:
+                    #     parsed = ast.parse(obfuscated)
+                    # except:
+                    #     print("Syntax error in obfuscated code!", flush=True)
+                    #     error = True
+                    #     try:
+                    #         parsed = ast.parse(code)
+                    #     except:
+                    #         print("Syntax error in obfuscated code!", flush=True)
+                    #         error = True
+                    #         parsed = ast.parse(original)
+                    scope = ast_scope.annotate(parsed)
+                    globalz = list(sorted(scope.global_scope.symbols_in_frame))
+                    transform = Transform(globalz)
+                    obfuscated = ast.unparse(transform.visit(parsed))
+                    q = substitute(q, transform.map)
+                    a = substitute(a, transform.map)
             # if prompt is not None:
             #     if (code, obfuscation) in cache.keys():
             #         obfuscated = cache[(code, obfuscation)]
