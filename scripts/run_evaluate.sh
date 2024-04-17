@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "deepseek" "results"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "deepseek" "question_only"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "mistral" "results"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "mistral" "question_only"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "magicoder_6.7b" "results"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "magicoder_6.7b" "question_only"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "codellama_7b" "results"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "codellama_7b" "question_only"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "codellama_13b" "results"
+CUDA_VISIBLE_DEVICES=0 python run_evaluate.py --model_name "codellama_13b" "question_only"
