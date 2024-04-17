@@ -16,6 +16,8 @@ Edit hyperparameters inside scripts, then:
 ```python run_primary_obfuscation.py && python run_secondary_obfuscation.py```
 Output files: primary_obfuscation_results.json, secondary_obfuscation_results.json
 
+The scripts will use deepseek-ai/deepseek-coder-33b-instruct as the default model for QA generation and primary obfuscation.
+
 ## Complete Dataset
 The complete dataset (normal and obfuscated versions) is available at this link: https://drive.google.com/file/d/1qPtnPjs_w0c4o24f5kPV5dUf3-yp2goh/view?usp=sharing. The file in ```data/``` is a subset of the complete data, with 14400 examples (100 code files, with various questions and obfuscations).
 
