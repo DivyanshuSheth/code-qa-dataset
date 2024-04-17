@@ -7,6 +7,14 @@ The aim of the project is to create a benchmark dataset for code question answer
 Create a new Python environment and install required dependencies using ```pip -r install requirements.txt```. The tested version of Python for the code is Python 3.11.5.
 
 ## Run QA Generation Pipeline
+Edit hyperparameters inside script, then:
+```python run_generation.py```
+Output file: generation_results.json
+
+## Run Obfuscation Pipeline
+Edit hyperparameters inside scripts, then:
+```python run_primary_obfuscation.py && python run_secondary_obfuscation.py```
+Output files: primary_obfuscation_results.json, secondary_obfuscation_results.json
 
 ## Complete Dataset
 The complete dataset (normal and obfuscated versions) is available at this link: https://drive.google.com/file/d/1qPtnPjs_w0c4o24f5kPV5dUf3-yp2goh/view?usp=sharing. The file in ```data/``` is a subset of the complete data, with 14400 examples (100 code files, with various questions and obfuscations).
